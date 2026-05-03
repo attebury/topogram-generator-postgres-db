@@ -1,0 +1,23 @@
+{
+  "version": "0.1",
+  "outputs": {
+    "app": {
+      "path": "./app",
+      "ownership": "generated"
+    }
+  },
+  "topology": {
+    "components": [
+      {
+        "id": "app_postgres",
+        "type": "database",
+        "projection": "proj_db_postgres",
+        "generator": {
+          "id": "@attebury/topogram-generator-postgres-db",
+          "version": "1",
+          "package": "@attebury/topogram-generator-postgres-db"
+        }
+      }
+    ]
+  }
+}

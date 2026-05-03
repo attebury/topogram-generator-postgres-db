@@ -1,0 +1,20 @@
+{
+  "name": "@attebury/topogram-generator-postgres-db",
+  "version": "0.1.0",
+  "description": "Package-backed Topogram generator for Postgres database lifecycle bundles.",
+  "license": "UNLICENSED",
+  "private": false,
+  "type": "commonjs",
+  "main": "index.cjs",
+  "files": [
+    "index.cjs",
+    "topogram-generator.json",
+    "README.md"
+  ],
+  "scripts": {
+    "check": "node ./scripts/verify.mjs"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

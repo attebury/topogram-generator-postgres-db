@@ -1,0 +1,31 @@
+projection proj_db_postgres {
+  name "Starter Postgres DB"
+  description "Postgres persistence realization for the neutral starter"
+  platform db_postgres
+
+  realizes [entity_greeting]
+  outputs [db_contract, sql_schema]
+
+  db_tables {
+    entity_greeting table greetings
+  }
+
+  db_keys {
+    entity_greeting primary [id]
+  }
+
+  db_indexes {
+    entity_greeting index [created_at]
+  }
+
+  db_lifecycle {
+    entity_greeting timestamps created_at created_at updated_at created_at
+  }
+
+  generator_defaults {
+    profile postgres_sql
+    language sql
+  }
+
+  status active
+}

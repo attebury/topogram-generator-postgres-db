@@ -1,0 +1,7 @@
+shape shape_output_greeting_detail from entity_greeting {
+  name "Greeting Detail Output"
+  description "Detailed greeting payload"
+  include [id, message, created_at]
+
+  status active
+}

@@ -1,0 +1,11 @@
+shape shape_input_update_greeting {
+  name "Update Greeting Input"
+  description "Input for updating a greeting"
+
+  fields {
+    greeting_id uuid required
+    message text optional
+  }
+
+  status active
+}

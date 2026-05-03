@@ -1,0 +1,7 @@
+shape shape_input_create_greeting from entity_greeting {
+  name "Create Greeting Input"
+  description "Fields accepted when creating a greeting"
+  include [message]
+
+  status active
+}

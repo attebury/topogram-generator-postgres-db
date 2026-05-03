@@ -1,0 +1,32 @@
+{
+  "id": "@attebury/topogram-generator-postgres-db",
+  "version": "1",
+  "surface": "database",
+  "targetKind": "database",
+  "projectionPlatforms": [
+    "db_postgres"
+  ],
+  "inputs": [
+    "db-contract",
+    "db-lifecycle-plan"
+  ],
+  "outputs": [
+    "db-lifecycle-bundle",
+    "sql-schema",
+    "sql-migration",
+    "prisma-schema",
+    "drizzle-schema"
+  ],
+  "stack": {
+    "database": "postgres",
+    "language": "sql"
+  },
+  "capabilities": {
+    "lifecycle": true,
+    "migrations": true,
+    "prisma": true,
+    "drizzle": true
+  },
+  "source": "package",
+  "package": "@attebury/topogram-generator-postgres-db"
+}

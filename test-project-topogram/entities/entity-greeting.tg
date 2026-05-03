@@ -1,0 +1,21 @@
+entity entity_greeting {
+  name "Greeting"
+  description "A minimal resource used by the neutral starter"
+
+  fields {
+    id uuid required
+    message text required
+    created_at datetime required
+  }
+
+  keys {
+    primary [id]
+    index [created_at]
+  }
+
+  invariants {
+    message length <= 240
+  }
+
+  status active
+}

@@ -1,0 +1,11 @@
+capability cap_list_greetings {
+  name "List Greetings"
+  description "Lists greetings"
+
+  actors [actor_operator]
+  reads [entity_greeting]
+  input [shape_input_list_greetings]
+  output [shape_output_greeting_detail]
+
+  status active
+}

@@ -1,0 +1,46 @@
+name: Publish Generator Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Package version to publish"
+        required: true
+        type: string
+      dist_tag:
+        description: "npm dist-tag"
+        required: true
+        default: latest
+        type: string
+
+jobs:
+  publish:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@attebury"
+      - name: Set package version
+        run: |
+          CURRENT="$(node -p "require('./package.json').version")"
+          if [[ "$CURRENT" != "${{ inputs.version }}" ]]; then
+            npm version "${{ inputs.version }}" --no-git-tag-version
+          else
+            echo "Package version already set to $CURRENT"
+          fi
+      - name: Verify
+        run: npm run check
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOPOGRAM_CLI_PACKAGE_SPEC: "@attebury/topogram@0.3.16"
+      - name: Publish
+        run: npm publish --tag "${{ inputs.dist_tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

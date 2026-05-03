@@ -1,0 +1,11 @@
+capability cap_create_greeting {
+  name "Create Greeting"
+  description "Creates a greeting"
+
+  actors [actor_operator]
+  creates [entity_greeting]
+  input [shape_input_create_greeting]
+  output [shape_output_greeting_detail]
+
+  status active
+}

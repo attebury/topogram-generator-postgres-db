@@ -1,0 +1,16 @@
+verification ver_runtime_smoke {
+  name "Starter runtime smoke"
+  description "Covers the minimum web and API checks for the neutral starter."
+
+  validates [cap_create_greeting, cap_get_greeting, cap_list_greetings]
+  method smoke
+
+  scenarios [
+    home_page_responds,
+    create_greeting_smoke,
+    get_created_greeting_smoke,
+    list_greetings_smoke
+  ]
+
+  status active
+}

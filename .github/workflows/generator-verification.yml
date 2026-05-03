@@ -1,0 +1,28 @@
+name: Generator Verification
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: Package-backed generator smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@attebury"
+      - name: Verify generator package
+        run: npm run check
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOPOGRAM_CLI_PACKAGE_SPEC: "@attebury/topogram@0.3.16"

@@ -1,0 +1,11 @@
+capability cap_get_greeting {
+  name "Get Greeting"
+  description "Fetches one greeting"
+
+  actors [actor_operator]
+  reads [entity_greeting]
+  input [shape_input_get_greeting]
+  output [shape_output_greeting_detail]
+
+  status active
+}

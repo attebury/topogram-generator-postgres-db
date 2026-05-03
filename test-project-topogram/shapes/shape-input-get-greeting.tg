@@ -1,0 +1,10 @@
+shape shape_input_get_greeting {
+  name "Get Greeting Input"
+  description "Input for fetching one greeting"
+
+  fields {
+    greeting_id uuid required
+  }
+
+  status active
+}

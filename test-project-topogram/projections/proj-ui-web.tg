@@ -1,0 +1,34 @@
+projection proj_ui_web {
+  name "Starter Web UI"
+  description "Web realization for the neutral starter using a SvelteKit profile"
+  platform ui_web
+
+  realizes [proj_ui_shared, cap_list_greetings, cap_get_greeting, cap_create_greeting, cap_update_greeting]
+  outputs [ui_contract, web_app]
+
+  ui_routes {
+    screen greeting_list path /greetings
+    screen greeting_detail path /greetings/:id
+    screen greeting_create path /greetings/new
+  }
+
+  ui_web {
+    screen greeting_list shell topbar
+    screen greeting_list layout responsive_collection
+    screen greeting_list desktop_variant table
+    screen greeting_list mobile_variant cards
+    screen greeting_list collection table
+    screen greeting_detail layout detail_page
+    screen greeting_create present page
+    action cap_create_greeting present button
+    action cap_create_greeting placement toolbar
+  }
+
+  generator_defaults {
+    profile sveltekit
+    language typescript
+    styling css
+  }
+
+  status active
+}

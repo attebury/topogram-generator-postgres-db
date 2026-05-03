@@ -1,0 +1,29 @@
+projection proj_api {
+  name "Starter API"
+  description "HTTP API realization for the neutral starter"
+  platform dotnet
+
+  realizes [cap_create_greeting, cap_get_greeting, cap_list_greetings, cap_update_greeting]
+  outputs [database_schema, entity_models, request_contracts, response_contracts, endpoints]
+
+  http {
+    cap_create_greeting method POST path /greetings success 201 auth none request body
+    cap_get_greeting method GET path /greetings/:id success 200 auth none request path
+    cap_list_greetings method GET path /greetings success 200 auth none request query
+    cap_update_greeting method PATCH path /greetings/:id success 200 auth none request body
+  }
+
+  http_fields {
+    cap_get_greeting input greeting_id in path as id
+    cap_update_greeting input greeting_id in path as id
+    cap_update_greeting input message in body
+    cap_list_greetings input after in query
+    cap_list_greetings input limit in query
+  }
+
+  http_responses {
+    cap_list_greetings mode cursor item shape_output_greeting_detail cursor request_after after response_next next_cursor limit field limit default 25 max 100 sort by created_at direction desc total included false
+  }
+
+  status active
+}

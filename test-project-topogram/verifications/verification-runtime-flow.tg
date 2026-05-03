@@ -1,0 +1,16 @@
+verification ver_runtime_flow {
+  name "Starter runtime flow"
+  description "Verifies the core greeting runtime behavior."
+
+  validates [cap_create_greeting, cap_get_greeting, cap_list_greetings, cap_update_greeting]
+  method runtime
+
+  scenarios [
+    create_greeting_runtime,
+    get_created_greeting_runtime,
+    list_greetings_runtime,
+    update_greeting_runtime
+  ]
+
+  status active
+}

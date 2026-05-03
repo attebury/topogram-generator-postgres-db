@@ -1,0 +1,7 @@
+shape shape_output_greeting_card from entity_greeting {
+  name "Greeting Card Output"
+  description "Compact greeting payload"
+  include [id, message, created_at]
+
+  status active
+}

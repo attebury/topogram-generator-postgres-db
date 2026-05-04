@@ -12,7 +12,7 @@
     "README.md"
   ],
   "scripts": {
-    "check": "node ./scripts/verify.mjs"
+    "check": "node ./scripts/check-generator.mjs && node ./scripts/verify.mjs"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

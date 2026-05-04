@@ -322,6 +322,52 @@ function renderPackageJson() {
   }, null, 2)}\n`;
 }
 
+function shellScript(body) {
+  return `#!/usr/bin/env bash\nset -euo pipefail\n\n${body.trim()}\n`;
+}
+
+function renderDbCommonScript() {
+  return shellScript(`
+SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+DB_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+STATE_DIR="$DB_DIR/state"
+mkdir -p "$STATE_DIR"
+`);
+}
+
+function renderDbBootstrapScript() {
+  return shellScript(`
+SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/db-common.sh"
+echo "Postgres lifecycle bundle is ready at $DB_DIR."
+echo "Runtime schema application is handled by the API Prisma service during app bootstrap."
+`);
+}
+
+function renderDbMigrateScript() {
+  return shellScript(`
+SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/db-common.sh"
+echo "No pending generated Postgres lifecycle migration was applied."
+echo "Use schema.sql or migrations/0001_init.sql with your migration runner, or let the generated API Prisma bootstrap push the runtime schema."
+`);
+}
+
+function renderDbStatusScript() {
+  return shellScript(`
+SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/db-common.sh"
+echo "Postgres lifecycle files:"
+for file in schema.sql migrations/0001_init.sql prisma/schema.prisma lifecycle.plan.json state/desired.snapshot.json; do
+  if [[ -f "$DB_DIR/$file" ]]; then
+    echo "- $file"
+  else
+    echo "- missing: $file"
+  fi
+done
+`);
+}
+
 function generate(context) {
   const tables = tablesFor(context || {}).map((table) => ({
     ...table,
@@ -343,6 +389,16 @@ function generate(context) {
     "scripts/check.mjs": "import fs from 'node:fs'; for (const file of ['schema.sql', 'migrations/0001_init.sql', 'prisma/schema.prisma', 'drizzle/schema.ts', 'lifecycle.plan.json']) { if (!fs.existsSync(file)) throw new Error(`missing ${file}`); } console.log('Checked Postgres database lifecycle bundle.');\n",
     "scripts/migration-plan.mjs": "import fs from 'node:fs'; console.log(fs.readFileSync('lifecycle.plan.json', 'utf8'));\n",
     "scripts/migrate.mjs": "console.log('Apply migrations/0001_init.sql with your Postgres migration runner.');\n",
+    "scripts/db-common.sh": renderDbCommonScript(),
+    "scripts/db-bootstrap.sh": renderDbBootstrapScript(),
+    "scripts/db-migrate.sh": renderDbMigrateScript(),
+    "scripts/db-status.sh": renderDbStatusScript(),
+    "scripts/db-bootstrap-or-migrate.sh": shellScript(`
+SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+bash "$SCRIPT_DIR/db-bootstrap.sh"
+`),
+    "snapshots/empty.snapshot.json": `${JSON.stringify({ engine: "postgres", tables: [] }, null, 2)}\n`,
+    "state/.gitkeep": "",
     "README.md": `# ${context?.component?.id || "Postgres DB"}\n\nGenerated Postgres lifecycle bundle for projection \`${context?.projection?.id || "unknown"}\`.\n\nRun \`npm run check\` to verify generated lifecycle files.\n`
   };
   return {

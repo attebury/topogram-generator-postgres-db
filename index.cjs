@@ -14,6 +14,24 @@ function entitiesFromGraph(graph) {
   return Object.values(graph.statements || {}).filter((statement) => statement.kind === "entity");
 }
 
+function statementsArray(graph) {
+  if (Array.isArray(graph?.statements)) return graph.statements;
+  return Object.values(graph?.statements || {});
+}
+
+function enumStatements(graph) {
+  return statementsArray(graph).filter((statement) => statement.kind === "enum");
+}
+
+function enumForType(graph, fieldType) {
+  const normalized = String(fieldType || "").replace(/^enum_/, "");
+  return enumStatements(graph).find((statement) => (
+    statement.id === fieldType ||
+    statement.id === `enum_${normalized}` ||
+    statement.id === normalized
+  )) || null;
+}
+
 function tableName(entity) {
   return slug(entity.table || entity.name || entity.id, "resource");
 }
@@ -58,6 +76,7 @@ function tablesFor(context) {
 }
 
 function sqlType(column) {
+  if (column.enumValues) return `"${pascal(column.fieldType)}"`;
   switch (String(column.fieldType || "text")) {
     case "uuid":
       return "UUID";
@@ -83,6 +102,11 @@ function columnSql(column) {
   return parts.join(" ");
 }
 
+function relationTargetTable(tables, relation) {
+  const targetId = relation?.target?.id;
+  return tables.find((table) => table.entity?.id === targetId)?.table || slug(String(targetId || "").replace(/^entity_/, ""));
+}
+
 function literal(value, type) {
   if (type === "boolean") return String(value) === "true" ? "true" : "false";
   if (type === "integer" || type === "number") return String(value);
@@ -91,6 +115,14 @@ function literal(value, type) {
 
 function renderSql(tables) {
   const blocks = [];
+  const emittedEnums = new Set();
+  for (const table of tables) {
+    for (const column of table.columns || []) {
+      if (!column.enumValues || emittedEnums.has(column.fieldType)) continue;
+      emittedEnums.add(column.fieldType);
+      blocks.push(`DO $$ BEGIN\n  CREATE TYPE "${pascal(column.fieldType)}" AS ENUM (${column.enumValues.map((value) => literal(value, "string")).join(", ")});\nEXCEPTION\n  WHEN duplicate_object THEN null;\nEND $$;`);
+    }
+  }
   for (const table of tables) {
     const columns = table.columns || [];
     const lines = columns.map((column) => `  ${columnSql(column)}`);
@@ -103,15 +135,21 @@ function renderSql(tables) {
     }
     for (const index of table.indexes || []) {
       const fields = Array.isArray(index.fields) ? index.fields : [];
-      if (fields.length > 0) {
+      if (fields.length > 0 && index.type !== "unique") {
         blocks.push(`CREATE INDEX IF NOT EXISTS "${table.table}_${fields.join("_")}_idx" ON "${table.table}" (${fields.map((field) => `"${field}"`).join(", ")});`);
       }
+    }
+    for (const relation of table.relations || []) {
+      const targetTable = relationTargetTable(tables, relation);
+      const onDelete = relation.onDelete ? ` ON DELETE ${String(relation.onDelete).replace(/_/g, " ").toUpperCase()}` : "";
+      blocks.push(`ALTER TABLE "${table.table}" ADD FOREIGN KEY ("${relation.field}") REFERENCES "${targetTable}"("${relation.target.field}")${onDelete};`);
     }
   }
   return `${blocks.join("\n\n")}\n`;
 }
 
 function prismaType(column) {
+  if (column.enumValues) return pascal(column.fieldType);
   switch (String(column.fieldType || "text")) {
     case "integer":
       return "Int";
@@ -127,6 +165,7 @@ function prismaType(column) {
 }
 
 function prismaDbAttr(column) {
+  if (column.enumValues) return "";
   if (column.fieldType === "uuid") return " @db.Uuid";
   if (column.fieldType === "datetime") return " @db.Timestamptz(3)";
   return "";
@@ -144,15 +183,58 @@ function renderPrisma(tables) {
     "}",
     ""
   ];
+  const emittedEnums = new Set();
+  for (const table of tables) {
+    for (const column of table.columns || []) {
+      if (!column.enumValues || emittedEnums.has(column.fieldType)) continue;
+      emittedEnums.add(column.fieldType);
+      lines.push(`enum ${pascal(column.fieldType)} {`);
+      for (const value of column.enumValues) lines.push(`  ${value}`);
+      lines.push("}");
+      lines.push("");
+    }
+  }
+  const relationBackrefs = new Map();
+  for (const table of tables) {
+    for (const relation of table.relations || []) {
+      const targetTable = relationTargetTable(tables, relation);
+      if (!relationBackrefs.has(targetTable)) relationBackrefs.set(targetTable, []);
+      relationBackrefs.get(targetTable).push({
+        fromTable: table.table,
+        fromModel: pascal(table.entity?.id || table.table),
+        field: relation.field,
+        relationName: `${pascal(table.entity?.id || table.table)}_${relation.field}_to_${pascal(relation.target?.id || targetTable)}`
+      });
+    }
+  }
   for (const table of tables) {
     const model = pascal(table.entity?.id || table.table);
+    const relationFields = new Map((table.relations || []).map((relation) => [relation.field, relation]));
     lines.push(`model ${model} {`);
     for (const column of table.columns || []) {
       const attrs = [];
       if ((table.primaryKey || []).length === 1 && table.primaryKey[0] === column.name) attrs.push("@id");
       if ((table.uniques || []).some((fields) => fields.length === 1 && fields[0] === column.name)) attrs.push("@unique");
-      if (column.defaultValue != null) attrs.push(`@default(${JSON.stringify(String(column.defaultValue))})`);
+      if (column.defaultValue != null) {
+        attrs.push(column.enumValues || column.fieldType === "boolean" || column.fieldType === "integer" || column.fieldType === "number"
+          ? `@default(${String(column.defaultValue)})`
+          : `@default(${JSON.stringify(String(column.defaultValue))})`);
+      }
       lines.push(`  ${column.sourceField || column.name} ${prismaType(column)}${isRequired(column) ? "" : "?"}${prismaDbAttr(column)}${attrs.length ? ` ${attrs.join(" ")}` : ""}`);
+      const relation = relationFields.get(column.name);
+      if (relation) {
+        const targetModel = pascal(relation.target?.id || relationTargetTable(tables, relation));
+        const relationName = `${model}_${column.sourceField || column.name}_to_${targetModel}`;
+        const optional = isRequired(column) ? "" : "?";
+        const fieldName = String(column.sourceField || column.name).replace(/_id$/, "");
+        lines.push(`  ${fieldName} ${targetModel}${optional} @relation("${relationName}", fields: [${column.sourceField || column.name}], references: [${relation.target.field}])`);
+      }
+    }
+    for (const backref of relationBackrefs.get(table.table) || []) {
+      lines.push(`  ${backref.fromTable} ${backref.fromModel}[] @relation("${backref.relationName}")`);
+    }
+    for (const index of table.indexes || []) {
+      if (index.type === "index") lines.push(`  @@index([${index.fields.join(", ")}])`);
     }
     if (table.table !== slug(model)) lines.push(`  @@map("${table.table}")`);
     lines.push("}");
@@ -162,6 +244,9 @@ function renderPrisma(tables) {
 }
 
 function drizzleColumn(column) {
+  if (column.enumValues) {
+    return `${slug(column.fieldType)}Enum("${column.name}")${isRequired(column) ? ".notNull()" : ""}${column.defaultValue != null ? `.default(${literal(column.defaultValue, "string")})` : ""}`;
+  }
   const fn = column.fieldType === "uuid" ? "uuid" : column.fieldType === "integer" ? "integer" : column.fieldType === "number" ? "doublePrecision" : column.fieldType === "boolean" ? "boolean" : column.fieldType === "datetime" ? "timestamp" : "text";
   const args = fn === "timestamp" ? `"${column.name}", { withTimezone: true, mode: "string" }` : `"${column.name}"`;
   const chain = [];
@@ -175,7 +260,16 @@ function isRequired(column) {
 }
 
 function renderDrizzle(tables) {
-  const lines = ['import { boolean, doublePrecision, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";', ""];
+  const lines = ['import { boolean, doublePrecision, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";', ""];
+  const emittedEnums = new Set();
+  for (const table of tables) {
+    for (const column of table.columns || []) {
+      if (!column.enumValues || emittedEnums.has(column.fieldType)) continue;
+      emittedEnums.add(column.fieldType);
+      lines.push(`export const ${slug(column.fieldType)}Enum = pgEnum("${slug(column.fieldType)}", [${column.enumValues.map((value) => `"${value}"`).join(", ")}]);`);
+    }
+  }
+  if (emittedEnums.size > 0) lines.push("");
   for (const table of tables) {
     const tableVar = `${slug(table.table)}Table`;
     lines.push(`export const ${tableVar} = pgTable("${table.table}", {`);
@@ -229,7 +323,13 @@ function renderPackageJson() {
 }
 
 function generate(context) {
-  const tables = tablesFor(context || {});
+  const tables = tablesFor(context || {}).map((table) => ({
+    ...table,
+    columns: (table.columns || []).map((column) => {
+      const enumStatement = enumForType(context?.graph || {}, column.fieldType);
+      return enumStatement ? { ...column, enumValues: enumStatement.values || [] } : column;
+    })
+  }));
   const sql = renderSql(tables);
   const files = {
     "schema.sql": sql,

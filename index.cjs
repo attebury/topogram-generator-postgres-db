@@ -115,12 +115,18 @@ function literal(value, type) {
 
 function renderSql(tables) {
   const blocks = [];
+  const indexBlocks = [];
+  const relationBlocks = [];
   const emittedEnums = new Set();
   for (const table of tables) {
     for (const column of table.columns || []) {
       if (!column.enumValues || emittedEnums.has(column.fieldType)) continue;
       emittedEnums.add(column.fieldType);
-      blocks.push(`DO $$ BEGIN\n  CREATE TYPE "${pascal(column.fieldType)}" AS ENUM (${column.enumValues.map((value) => literal(value, "string")).join(", ")});\nEXCEPTION\n  WHEN duplicate_object THEN null;\nEND $$;`);
+      blocks.push(`DO $$ BEGIN
+  CREATE TYPE "${pascal(column.fieldType)}" AS ENUM (${column.enumValues.map((value) => literal(value, "string")).join(", ")});
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;`);
     }
   }
   for (const table of tables) {
@@ -129,25 +135,27 @@ function renderSql(tables) {
     if ((table.primaryKey || []).length > 0) {
       lines.push(`  PRIMARY KEY (${table.primaryKey.map((field) => `"${field}"`).join(", ")})`);
     }
-    blocks.push(`CREATE TABLE IF NOT EXISTS "${table.table}" (\n${lines.join(",\n")}\n);`);
+    blocks.push(`CREATE TABLE IF NOT EXISTS "${table.table}" (
+${lines.join(",\n")}
+);`);
     for (const fields of table.uniques || []) {
-      blocks.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${table.table}_${fields.join("_")}_unique" ON "${table.table}" (${fields.map((field) => `"${field}"`).join(", ")});`);
+      indexBlocks.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${table.table}_${fields.join("_")}_unique" ON "${table.table}" (${fields.map((field) => `"${field}"`).join(", ")});`);
     }
     for (const index of table.indexes || []) {
       const fields = Array.isArray(index.fields) ? index.fields : [];
       if (fields.length > 0 && index.type !== "unique") {
-        blocks.push(`CREATE INDEX IF NOT EXISTS "${table.table}_${fields.join("_")}_idx" ON "${table.table}" (${fields.map((field) => `"${field}"`).join(", ")});`);
+        indexBlocks.push(`CREATE INDEX IF NOT EXISTS "${table.table}_${fields.join("_")}_idx" ON "${table.table}" (${fields.map((field) => `"${field}"`).join(", ")});`);
       }
     }
     for (const relation of table.relations || []) {
       const targetTable = relationTargetTable(tables, relation);
       const onDelete = relation.onDelete ? ` ON DELETE ${String(relation.onDelete).replace(/_/g, " ").toUpperCase()}` : "";
-      blocks.push(`ALTER TABLE "${table.table}" ADD FOREIGN KEY ("${relation.field}") REFERENCES "${targetTable}"("${relation.target.field}")${onDelete};`);
+      relationBlocks.push(`ALTER TABLE "${table.table}" ADD FOREIGN KEY ("${relation.field}") REFERENCES "${targetTable}"("${relation.target.field}")${onDelete};`);
     }
   }
-  return `${blocks.join("\n\n")}\n`;
+  return `${[...blocks, ...indexBlocks, ...relationBlocks].join("\n\n")}
+`;
 }
-
 function prismaType(column) {
   if (column.enumValues) return pascal(column.fieldType);
   switch (String(column.fieldType || "text")) {

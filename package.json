@@ -1,6 +1,6 @@
 {
   "name": "@attebury/topogram-generator-postgres-db",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Package-backed Topogram generator for Postgres database lifecycle bundles.",
   "license": "UNLICENSED",
   "private": false,

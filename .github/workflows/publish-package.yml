@@ -36,10 +36,11 @@ jobs:
             echo "Package version already set to $CURRENT"
           fi
       - name: Verify
-        run: npm run check
+        run: |
+          TOPOGRAM_CLI_VERSION="$(cat topogram-cli.version)"
+          TOPOGRAM_CLI_PACKAGE_SPEC="@attebury/topogram@$TOPOGRAM_CLI_VERSION" npm run check
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TOPOGRAM_CLI_PACKAGE_SPEC: "@attebury/topogram@0.3.20"
       - name: Publish
         run: npm publish --tag "${{ inputs.dist_tag }}"
         env:

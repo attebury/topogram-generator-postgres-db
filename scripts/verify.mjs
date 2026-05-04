@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const workRoot = path.join(root, ".tmp", "verify");
 const packRoot = path.join(workRoot, "pack");
 const npmCache = path.join(workRoot, "npm-cache");
-const cliPackageSpec = process.env.TOPOGRAM_CLI_PACKAGE_SPEC || `file:${path.resolve(root, "../topogram/engine")}`;
+const cliPackageSpec = process.env.TOPOGRAM_CLI_PACKAGE_SPEC || defaultCliPackageSpec();
 const cliDependencySpec = dependencySpecFor("@attebury/topogram", cliPackageSpec);
 
 fs.rmSync(workRoot, { recursive: true, force: true });
@@ -35,6 +35,8 @@ console.log("Checking Topogram project...");
 run(topogramBin, ["check"], { cwd: projectRoot });
 console.log("Generating app with package-backed generator...");
 run(topogramBin, ["generate"], { cwd: projectRoot });
+console.log("Running generated app compile check...");
+run("npm", ["--prefix", path.join(projectRoot, "app"), "run", "compile"], { cwd: projectRoot });
 const outputRoot = path.join(projectRoot, "app", "apps", "db", "app_postgres");
 assert.equal(fs.existsSync(path.join(projectRoot, "app", ".topogram-generated.json")), true);
 assert.equal(fs.existsSync(path.join(outputRoot, "schema.sql")), true, `Expected generated schema.sql`);
@@ -47,9 +49,11 @@ assert.match(schema, /CREATE TABLE IF NOT EXISTS "greetings"/);
 assert.match(schema, /"message" TEXT NOT NULL/);
 assert.match(fs.readFileSync(path.join(outputRoot, "prisma", "schema.prisma"), "utf8"), /provider = "postgresql"/);
 assert.match(fs.readFileSync(path.join(outputRoot, "drizzle", "schema.ts"), "utf8"), /pgTable\("greetings"/);
+run("bash", [path.join(outputRoot, "scripts", "db-status.sh")], { cwd: projectRoot, quiet: true });
 console.log("Package-backed @attebury/topogram-generator-postgres-db smoke passed.");
 
 function run(command, args, options = {}) { const result = childProcess.spawnSync(command, args, { cwd: options.cwd || root, encoding: "utf8", env: { ...process.env, npm_config_cache: npmCache, PATH: process.env.PATH || "" } }); if (result.status !== 0) throw new Error([ `Command failed: ${command} ${args.join(" ")}`, result.stdout, result.stderr ].filter(Boolean).join("\n")); if (!options.quiet && result.stdout) process.stdout.write(result.stdout); if (!options.quiet && result.stderr) process.stderr.write(result.stderr); return result; }
 function writeJson(filePath, value) { fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8"); }
 function writeNpmrc(projectRoot) { const lines = ["@attebury:registry=https://npm.pkg.github.com"]; if (process.env.NODE_AUTH_TOKEN) lines.push(`//npm.pkg.github.com/:_authToken=${process.env.NODE_AUTH_TOKEN}`); lines.push(""); fs.writeFileSync(path.join(projectRoot, ".npmrc"), lines.join("\n"), "utf8"); }
 function dependencySpecFor(packageName, packageSpec) { const prefix = `${packageName}@`; return packageSpec.startsWith(prefix) ? packageSpec.slice(prefix.length) : packageSpec; }
+function defaultCliPackageSpec() { const version = fs.readFileSync(path.join(root, "topogram-cli.version"), "utf8").trim(); if (!version) throw new Error("topogram-cli.version must contain the Topogram CLI version used by package smoke verification."); return `@attebury/topogram@${version}`; }

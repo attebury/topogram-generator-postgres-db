@@ -7,7 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const workRoot = path.join(root, ".tmp", "generator-check");
 const npmCache = path.join(workRoot, "npm-cache");
 const npmrcPath = path.join(workRoot, ".npmrc");
-const cliPackageSpec = process.env.TOPOGRAM_CLI_PACKAGE_SPEC || "@attebury/topogram@0.3.20";
+const cliPackageSpec = process.env.TOPOGRAM_CLI_PACKAGE_SPEC || defaultCliPackageSpec();
 const authToken = process.env.NODE_AUTH_TOKEN || readGhToken();
 
 fs.rmSync(workRoot, { recursive: true, force: true });
@@ -67,4 +67,12 @@ function readGhToken() {
     return "";
   }
   return result.stdout.trim();
+}
+
+function defaultCliPackageSpec() {
+  const version = fs.readFileSync(path.join(root, "topogram-cli.version"), "utf8").trim();
+  if (!version) {
+    throw new Error("topogram-cli.version must contain the Topogram CLI version used by generator verification.");
+  }
+  return `@attebury/topogram@${version}`;
 }

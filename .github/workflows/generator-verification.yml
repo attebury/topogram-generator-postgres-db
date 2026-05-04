@@ -22,7 +22,8 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: "@attebury"
       - name: Verify generator package
-        run: npm run check
+        run: |
+          TOPOGRAM_CLI_VERSION="$(cat topogram-cli.version)"
+          TOPOGRAM_CLI_PACKAGE_SPEC="@attebury/topogram@$TOPOGRAM_CLI_VERSION" npm run check
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TOPOGRAM_CLI_PACKAGE_SPEC: "@attebury/topogram@0.3.20"

@@ -38,6 +38,15 @@ run(topogramBin, ["generate"], { cwd: projectRoot });
 const outputRoot = path.join(projectRoot, "app", "apps", "db", "app_postgres");
 assert.equal(fs.existsSync(path.join(projectRoot, "app", ".topogram-generated.json")), true);
 assert.equal(fs.existsSync(path.join(outputRoot, "schema.sql")), true, `Expected generated schema.sql`);
+assert.equal(fs.existsSync(path.join(outputRoot, "migrations", "0001_init.sql")), true, `Expected generated initial migration`);
+assert.equal(fs.existsSync(path.join(outputRoot, "prisma", "schema.prisma")), true, `Expected generated Prisma schema`);
+assert.equal(fs.existsSync(path.join(outputRoot, "drizzle", "schema.ts")), true, `Expected generated Drizzle schema`);
+assert.equal(fs.existsSync(path.join(outputRoot, "lifecycle.plan.json")), true, `Expected generated lifecycle plan`);
+const schema = fs.readFileSync(path.join(outputRoot, "schema.sql"), "utf8");
+assert.match(schema, /CREATE TABLE IF NOT EXISTS "greetings"/);
+assert.match(schema, /"message" TEXT NOT NULL/);
+assert.match(fs.readFileSync(path.join(outputRoot, "prisma", "schema.prisma"), "utf8"), /provider = "postgresql"/);
+assert.match(fs.readFileSync(path.join(outputRoot, "drizzle", "schema.ts"), "utf8"), /pgTable\("greetings"/);
 console.log("Package-backed @attebury/topogram-generator-postgres-db smoke passed.");
 
 function run(command, args, options = {}) { const result = childProcess.spawnSync(command, args, { cwd: options.cwd || root, encoding: "utf8", env: { ...process.env, npm_config_cache: npmCache, PATH: process.env.PATH || "" } }); if (result.status !== 0) throw new Error([ `Command failed: ${command} ${args.join(" ")}`, result.stdout, result.stderr ].filter(Boolean).join("\n")); if (!options.quiet && result.stdout) process.stdout.write(result.stdout); if (!options.quiet && result.stderr) process.stderr.write(result.stderr); return result; }

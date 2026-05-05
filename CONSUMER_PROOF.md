@@ -14,7 +14,7 @@ The check must:
 - run `topogram generator check` through the installed Topogram CLI pinned in
   `topogram-cli.version`;
 - pack this generator package;
-- install the packed generator beside `@attebury/topogram` in a clean consumer
+- install the packed generator beside `@topogram/cli` in a clean consumer
   project;
 - run `topogram check`;
 - run `topogram generate`;
@@ -24,7 +24,7 @@ The check must:
 
 ## Not Acceptable
 
-- Hard-coded stale `@attebury/topogram@x.y.z` literals in verification or
+- Hard-coded stale `@topogram/cli@x.y.z` literals in verification or
   publish workflows.
 - Fake npm package installs in consumer-facing verification.
 - Generate-only smoke tests.

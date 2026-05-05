@@ -1,5 +1,5 @@
 {
-  "id": "@attebury/topogram-generator-postgres-db",
+  "id": "@topogram/generator-postgres-db",
   "version": "1",
   "surface": "database",
   "targetKind": "database",
@@ -28,5 +28,5 @@
     "drizzle": true
   },
   "source": "package",
-  "package": "@attebury/topogram-generator-postgres-db"
+  "package": "@topogram/generator-postgres-db"
 }

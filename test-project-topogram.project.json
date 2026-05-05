@@ -13,9 +13,9 @@
         "type": "database",
         "projection": "proj_db_postgres",
         "generator": {
-          "id": "@attebury/topogram-generator-postgres-db",
+          "id": "@topogram/generator-postgres-db",
           "version": "1",
-          "package": "@attebury/topogram-generator-postgres-db"
+          "package": "@topogram/generator-postgres-db"
         }
       }
     ]

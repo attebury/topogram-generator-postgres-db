@@ -13,17 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: https://npm.pkg.github.com
-          scope: "@attebury"
+          registry-url: https://registry.npmjs.org
+          scope: "@topogram"
       - name: Verify generator package
         run: |
           TOPOGRAM_CLI_VERSION="$(cat topogram-cli.version)"
-          TOPOGRAM_CLI_PACKAGE_SPEC="@attebury/topogram@$TOPOGRAM_CLI_VERSION" npm run check
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOPOGRAM_CLI_PACKAGE_SPEC="@topogram/cli@$TOPOGRAM_CLI_VERSION" npm run check

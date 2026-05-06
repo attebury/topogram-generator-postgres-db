@@ -20,6 +20,7 @@ const pack = run("npm", ["pack", "--silent", "--pack-destination", packRoot], { 
 const tarballName = pack.stdout.trim().split(/\r?\n/).filter(Boolean).at(-1);
 const generatorTarball = path.join(packRoot, tarballName);
 assert.equal(fs.existsSync(generatorTarball), true, `Expected ${generatorTarball}`);
+assertNoEnvFilesInTarball(generatorTarball, "@topogram/generator-postgres-db");
 
 const projectRoot = path.join(workRoot, "consumer");
 fs.mkdirSync(projectRoot, { recursive: true });
@@ -54,4 +55,5 @@ console.log("Package-backed @topogram/generator-postgres-db smoke passed.");
 function run(command, args, options = {}) { const result = childProcess.spawnSync(command, args, { cwd: options.cwd || root, encoding: "utf8", env: { ...process.env, npm_config_cache: npmCache, PATH: process.env.PATH || "" } }); if (result.status !== 0) throw new Error([ `Command failed: ${command} ${args.join(" ")}`, result.stdout, result.stderr ].filter(Boolean).join("\n")); if (!options.quiet && result.stdout) process.stdout.write(result.stdout); if (!options.quiet && result.stderr) process.stderr.write(result.stderr); return result; }
 function writeJson(filePath, value) { fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8"); }
 function dependencySpecFor(packageName, packageSpec) { const prefix = `${packageName}@`; return packageSpec.startsWith(prefix) ? packageSpec.slice(prefix.length) : packageSpec; }
+function assertNoEnvFilesInTarball(tarballPath, packageName) { const listing = run("tar", ["-tzf", tarballPath], { quiet: true }); const envFiles = listing.stdout.split(/\r?\n/).filter(Boolean).filter((entry) => path.posix.basename(entry).startsWith(".env")); assert.deepEqual(envFiles, [], `${packageName} package must not publish .env* files`); }
 function defaultCliPackageSpec() { const version = fs.readFileSync(path.join(root, "topogram-cli.version"), "utf8").trim(); if (!version) throw new Error("topogram-cli.version must contain the Topogram CLI version used by package smoke verification."); return `@topogram/cli@${version}`; }

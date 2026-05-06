@@ -5,6 +5,10 @@
   "license": "UNLICENSED",
   "private": false,
   "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/attebury/topogram-generator-postgres-db"
+  },
   "main": "index.cjs",
   "files": [
     "index.cjs",

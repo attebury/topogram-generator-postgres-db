@@ -7,16 +7,16 @@
     }
   },
   "topology": {
-    "components": [
+    "runtimes": [
       {
         "id": "app_postgres",
-        "type": "database",
         "projection": "proj_db_postgres",
         "generator": {
           "id": "@topogram/generator-postgres-db",
           "version": "1",
           "package": "@topogram/generator-postgres-db"
-        }
+        },
+        "kind": "database"
       }
     ]
   }

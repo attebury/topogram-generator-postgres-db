@@ -2,10 +2,6 @@
   "id": "@topogram/generator-postgres-db",
   "version": "1",
   "surface": "database",
-  "targetKind": "database",
-  "projectionPlatforms": [
-    "db_postgres"
-  ],
   "inputs": [
     "db-contract",
     "db-lifecycle-plan"
@@ -28,5 +24,11 @@
     "drizzle": true
   },
   "source": "package",
-  "package": "@topogram/generator-postgres-db"
+  "package": "@topogram/generator-postgres-db",
+  "runtimeKinds": [
+    "database"
+  ],
+  "projectionTypes": [
+    "db_contract"
+  ]
 }

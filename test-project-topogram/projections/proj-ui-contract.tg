@@ -1,12 +1,12 @@
-projection proj_ui_shared {
+projection proj_ui_contract {
   name "Starter Shared UI"
   description "Platform-neutral UI semantics for the neutral starter"
-  platform ui_shared
+  type ui_contract
 
   realizes [cap_list_greetings, cap_get_greeting, cap_create_greeting, cap_update_greeting]
   outputs [ui_contract]
 
-  ui_app_shell {
+  app_shell {
     brand "Topogram Starter"
     shell topbar
     global_search false
@@ -15,20 +15,20 @@ projection proj_ui_shared {
     footer none
   }
 
-  ui_screens {
+  screens {
     screen greeting_list kind list title "Greetings" load cap_list_greetings item_shape shape_output_greeting_card detail_capability cap_get_greeting primary_action cap_create_greeting empty_title "No greetings yet" empty_body "Create a greeting to verify the generated stack" loading_state skeleton error_state inline
     screen greeting_detail kind detail title "Greeting Details" load cap_get_greeting view_shape shape_output_greeting_detail primary_action cap_update_greeting loading_state skeleton
     screen greeting_create kind form title "Create Greeting" input_shape shape_input_create_greeting submit cap_create_greeting success_navigate greeting_detail success_state banner
   }
 
-  ui_navigation {
+  navigation {
     group starter label "Starter" placement primary pattern primary
     screen greeting_list group starter label "Greetings" order 10 visible true default true sitemap include pattern primary
     screen greeting_create group starter label "Create" order 20 visible true sitemap include pattern primary
     screen greeting_detail group starter label "Greeting Details" visible false breadcrumb greeting_list sitemap exclude pattern stack_navigation
   }
 
-  ui_screen_regions {
+  screen_regions {
     screen greeting_list region hero pattern summary_stats placement primary
     screen greeting_list region results pattern resource_table placement primary
     screen greeting_detail region summary pattern detail_panel placement primary

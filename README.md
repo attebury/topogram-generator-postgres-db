@@ -6,7 +6,7 @@ Package-backed Topogram generator for Postgres database lifecycle bundles.
 
 - Generator id: `@topogram/generator-postgres-db`
 - Surface: `database`
-- Projection platform: `db_postgres`
+- Projection type: `db_postgres`
 - Package manifest: `topogram-generator.json`
 - Adapter export: `index.cjs`
 

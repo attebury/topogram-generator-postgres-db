@@ -11,27 +11,15 @@ const cliPackageSpec = process.env.TOPOGRAM_CLI_PACKAGE_SPEC || defaultCliPackag
 fs.rmSync(workRoot, { recursive: true, force: true });
 fs.mkdirSync(npmCache, { recursive: true });
 
-run("npm", [
-  "exec",
-  "--yes",
-  "--package",
-  cliPackageSpec,
-  "--",
-  "topogram",
-  "generator",
-  "check",
-  root
-]);
+run("npm", ["install", "--prefix", workRoot, "--silent", "--no-audit", "--ignore-scripts", "--package-lock=false", cliPackageSpec]);
+const topogramBin = path.join(workRoot, "node_modules", ".bin", process.platform === "win32" ? "topogram.cmd" : "topogram");
+run(topogramBin, ["generator", "check", root]);
 
 function run(command, args) {
   const result = childProcess.spawnSync(command, args, {
-    cwd: root,
+    cwd: workRoot,
     encoding: "utf8",
-    env: {
-      ...process.env,
-      npm_config_cache: npmCache,
-      PATH: process.env.PATH || ""
-    }
+    env: childEnv()
   });
   if (result.status !== 0) {
     throw new Error([
@@ -42,6 +30,29 @@ function run(command, args) {
   }
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
+}
+
+function childEnv() {
+  const env = { ...process.env };
+  for (const key of Object.keys(env)) {
+    if (key.startsWith("npm_package_") || key.startsWith("npm_lifecycle_")) {
+      delete env[key];
+    }
+  }
+  delete env.INIT_CWD;
+  delete env.npm_config_local_prefix;
+  delete env.npm_config_prefix;
+  env.npm_config_cache = npmCache;
+  env.PATH = cleanPath(process.env.PATH || "", root);
+  return env;
+}
+
+function cleanPath(value, packageRoot) {
+  const blocked = new Set([
+    path.join(packageRoot, "node_modules", ".bin"),
+    path.resolve(packageRoot, "node_modules", ".bin")
+  ]);
+  return value.split(path.delimiter).filter((entry) => entry && !blocked.has(path.resolve(entry))).join(path.delimiter);
 }
 
 function defaultCliPackageSpec() {

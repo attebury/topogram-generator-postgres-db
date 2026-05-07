@@ -302,7 +302,7 @@ function renderDrizzle(tables) {
 function renderLifecyclePlan(context, tables) {
   return `${JSON.stringify(context.contracts?.lifecyclePlan || {
     type: "db_lifecycle_plan",
-    projection: { id: context.projection?.id || null, platform: context.projection?.platform || "db_postgres" },
+    projection: { id: context.projection?.id || null, type: context.projection?.type || "db_contract" },
     engine: "postgres",
     tables: tables.map((table) => table.table),
     state: {
@@ -499,7 +499,7 @@ exec bash "$SCRIPT_DIR/db-bootstrap.sh"
 `),
     "snapshots/empty.snapshot.json": `${JSON.stringify({ engine: "postgres", tables: [] }, null, 2)}\n`,
     "state/.gitkeep": "",
-    "README.md": `# ${context?.component?.id || "Postgres DB"}\n\nGenerated Postgres lifecycle bundle for projection \`${context?.projection?.id || "unknown"}\`.\n\nRun \`npm run check\` to verify generated lifecycle files.\n`
+    "README.md": `# ${context?.widget?.id || "Postgres DB"}\n\nGenerated Postgres lifecycle bundle for projection \`${context?.projection?.id || "unknown"}\`.\n\nRun \`npm run check\` to verify generated lifecycle files.\n`
   };
   return {
     files,

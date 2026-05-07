@@ -1,24 +1,24 @@
 projection proj_db_postgres {
   name "Starter Postgres DB"
   description "Postgres persistence realization for the neutral starter"
-  platform db_postgres
+  type db_contract
 
   realizes [entity_greeting]
   outputs [db_contract, sql_schema]
 
-  db_tables {
+  tables {
     entity_greeting table greetings
   }
 
-  db_keys {
+  keys {
     entity_greeting primary [id]
   }
 
-  db_indexes {
+  indexes {
     entity_greeting index [created_at]
   }
 
-  db_lifecycle {
+  lifecycle {
     entity_greeting timestamps created_at created_at updated_at created_at
   }
 
